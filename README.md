@@ -1,6 +1,6 @@
-# 🧬 SAM System Analysis
+#  SAM System Analysis
 
-## 📋 Description
+## Description
 Ce projet permet d'analyser les fichiers **SAM** afin de :
 1. Vérifier leur validité.
 2. Extraire diverses statistiques concernant les reads. 
@@ -9,7 +9,7 @@ Le projet contient :
 - Un script Python pour l'analyse des fichiers **SAM**.
 - Un script Bash pour vérifier la validité des fichiers **SAM**.
 
-## 🛠️ Fonctionnalités
+## Fonctionnalités
 - **Vérification de fichiers SAM** :
   - Validation de l'en-tête et des colonnes obligatoires.
 - **Extraction de statistiques** :
@@ -19,12 +19,12 @@ Le projet contient :
   - Répartition des qualités de mappage des reads.
   - Nombre de reads partiellement mappés.
 
-## 📂 Structure du Projet
+## Structure du Projet
 - `analyse_sam.py` : Script Python pour analyser les fichiers SAM.
 - `check_sam.sh` : Script Bash pour valider la structure des fichiers SAM.
 - `test_mapping.sam` : Exemple de fichier SAM utilisé pour tester les scripts.
 
-## 🚀 Utilisation
+## Utilisation
 
 ### 1️⃣ Pré-requis
 - **Python 3.x** installé sur votre machine.
