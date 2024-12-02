@@ -30,29 +30,34 @@ Le projet contient :
 - **Python 3.x** installé sur votre machine.
 - **Bash** (disponible sous Linux/MacOS ou via Git Bash sous Windows).
 
-### 2️⃣ Vérification du fichier SAM
-Exécuter le script `check_sam.sh` :
-```bash
-bash check_sam.sh <chemin_du_fichier_sam>
-### 2️⃣ Vérification du fichier SAM
-### 🧪 3 Analyse du fichier SAM
+### 🧪 Vérification du fichier SAM
 
-### Analyse du fichier SAM 📊
-Exécuter le script analyse_sam.py pour analyser un fichier SAM et extraire des statistiques :
 
+
+
+📊 Analyse du fichier SAM
+Pour analyser un fichier SAM et en extraire des statistiques, utilisez le script analyse_sam.py :
 python3 analyse_sam.py <chemin_du_fichier_sam>
 
-Exemple d'utilisation
-Vérification d'un fichier SAM :
-bash check_sam.sh test_mapping.sam
-Résultat attendu : un message indiquant si le fichier est valide ou non.
 
-Analyse d'un fichier SAM :
+Exemple d'utilisation
+
+1️⃣ Vérification d'un fichier SAM
+Commande :
+bash check_sam.sh test_mapping.sam
+
+Résultat attendu :
+Un message confirmant si le fichier est valide ou non.
+
+2️⃣ Analyse d'un fichier SAM
+Commande :
 python3 analyse_sam.py test_mapping.sam
-Résultat attendu : des statistiques comme :
+
+Résultat attendu :
+Les statistiques suivantes :
 
 total_reads
-mapped_reads 
+mapped_reads
 unmapped_reads
 first_reads_mapped
 second_reads_mapped
@@ -60,6 +65,8 @@ percentage_mapped
 partially_matched_reads
 quality_distribution
 chromosome_mapping
+
+
 
 
 
