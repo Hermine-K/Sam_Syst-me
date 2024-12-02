@@ -34,7 +34,6 @@ Le projet contient :
 Exécuter le script `check_sam.sh` :
 ```bash
 bash check_sam.sh <chemin_du_fichier_sam>
-### 🧪 3 Analyse du fichier SAM
-
 ### 2️⃣ Vérification du fichier SAM
+### 🧪 3 Analyse du fichier SAM
 
