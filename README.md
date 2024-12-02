@@ -37,3 +37,29 @@ bash check_sam.sh <chemin_du_fichier_sam>
 ### 2️⃣ Vérification du fichier SAM
 ### 🧪 3 Analyse du fichier SAM
 
+### Analyse du fichier SAM 📊
+Exécuter le script analyse_sam.py pour analyser un fichier SAM et extraire des statistiques :
+
+python3 analyse_sam.py <chemin_du_fichier_sam>
+
+Exemple d'utilisation
+Vérification d'un fichier SAM :
+bash check_sam.sh test_mapping.sam
+Résultat attendu : un message indiquant si le fichier est valide ou non.
+
+Analyse d'un fichier SAM :
+python3 analyse_sam.py test_mapping.sam
+Résultat attendu : des statistiques comme :
+
+total_reads
+mapped_reads 
+unmapped_reads
+first_reads_mapped
+second_reads_mapped
+percentage_mapped
+partially_matched_reads
+quality_distribution
+chromosome_mapping
+
+
+
