@@ -147,6 +147,27 @@ def count_partially_matched(read_pairs):
     return partial_reads
 
 
+########création de tableau#### 
+
+
+
+##########Créations des graphes##### 
+
+#Proportion des reads mappées vs non mappées : Un graphique en camembert.
+
+#Pourcentage de premiers et seconds reads mappés : Un graphique pour visualiser les proportions.
+
+#Homogénéité de l'alignement : graphique linéaire montrant la répartition des positions des reads sur chaque chromosome.
+
+#Répartition des reads par chromosome : Un graphique en barres illustrant le nombre de reads alignés sur chaque chromosome.
+
+#Distribution des reads par qualité de mappage (MAPQ) : Un histogramme montrant la fréquence des différentes valeurs de qualité de mappage.
+
+#Distribution des reads partiellement alignées (CIGAR) : Un graphique pour voir combien de reads sont partiellement alignées.
+
+
+
+###########sauvegarde dans un fichier 
 
 
 
@@ -178,7 +199,7 @@ if __name__ == "__main__":
     partial_reads = count_partially_matched(read_pairs)
 
     
-    # Compilation des statistiques finales à afficher ou à exporter.
+    # 1. Compilation des statistiques finales à afficher ou à exporter.
     stats = {
         "total_reads": nb_reads,
         "mapped_reads": mapped_reads,
@@ -195,4 +216,14 @@ if __name__ == "__main__":
 for key, value in stats.items():
     print(f"{key}: {value}")
  # Affiche un résumé formaté des statistiques.
+
+
+  # 2. Création de graphes à partir des résultats.
+
+
+  # 3. Créations de tableau à partir des résultats 
+
+  # 4. Sauvegarde des résultats dans un fichiers 
+
+
 
