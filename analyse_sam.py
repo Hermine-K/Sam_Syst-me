@@ -47,7 +47,6 @@ def count_mapped_first_and_second(data):
     second_reads_mapped = 0 # Nombre de second reads mappés.
 
     for sequence in data:
-        qname = sequence['QNAME'] # Nom unique de chaque read.
         flag = int(sequence['FLAG']) # Convertit le FLAG en entier.
         
         if flag & 4 > 0: # Ignore les reads non mappées / vérification.
@@ -59,19 +58,12 @@ def count_mapped_first_and_second(data):
         is_first_in_pair = flag & 64 > 0
         is_second_in_pair = flag & 128 > 0
 
-        if qname not in read_pairs.keys():  # Initialise une paire si nécessaire.
-            read_pairs[qname] = {"first_read": None, "second_read": None}
-
         if is_first_in_pair:  # Stocke les informations du premier read.
-            read_pairs[qname]["first_read"] = sequence
             first_reads_mapped += 1
-
         elif is_second_in_pair: # Stocke les informations du second read.
-            read_pairs[qname]["second_read"] = sequence
             second_reads_mapped +=1
 
     return {
-        "read_pairs": read_pairs,
         "first_reads_mapped": first_reads_mapped,
         "second_reads_mapped": second_reads_mapped,
     } 
@@ -80,22 +72,20 @@ def count_mapped_first_and_second(data):
 
 #Question 3 : Nombre de reads par chromosome
 
-def analyze_chromosome_positions(read_pairs):
+def analyze_chromosome_positions_hk(data):
     # Analyse la distribution des positions des reads sur chaque chromosome.
 
     chromosome_positions = {}  # Dictionnaire pour stocker les positions par chromosome.
+    for read in data:
+        chrom =read['RNAME']  # Chromosome associé à la read.
+        pos = int(read['POS'])  # Position sur le chromosome.
 
-    for qname, reads in read_pairs.items():
-        for read in ['first_read', 'second_read']:  # Parcourt les reads individuelles.
-            if reads[read] and reads[read]['RNAME'] and reads[read]['POS']:
-                # Vérifie que la read est mappée et possède un chromosome et une position.
-                chrom = reads[read]['RNAME']  # Chromosome associé à la read.
-                pos = int(reads[read]['POS'])  # Position sur le chromosome.
+        if chrom == "*": # Filtrer les reads non mappés (RNAME == '*')
+            continue
 
-                if chrom not in chromosome_positions:  # Ajoute un chromosome si absent.
-                    chromosome_positions[chrom] = []
-
-                chromosome_positions[chrom].append(pos)  # Ajoute la position à la liste du chromosome.
+        if chrom not in chromosome_positions:  # Ajoute un chromosome si absent.
+            chromosome_positions[chrom] = []
+        chromosome_positions[chrom].append(pos)  # Ajoute la position à la liste du chromosome.
 
     alignment_homogeneity = {}  # Dictionnaire pour résumer l'homogénéité de l'alignement.
 
@@ -117,31 +107,23 @@ def analyze_chromosome_positions(read_pairs):
 
 #Question 4 : Nombre de reads pour chaque valeur de qualité ou par tranche de valeurs 
 
-def count_reads_by_quality(read_pairs):
+def count_reads_by_quality_hk(data):
     # Compte les reads par qualité de mappage.
     quality_counts = {}
-
-    for qname, reads in read_pairs.items():
-        for read in ['first_read', 'second_read']:
-            if reads[read] and reads[read]['MAPQ']:
-                # Vérifie que MAPQ de mappage est définie.
-                mapq = int(reads[read]['MAPQ']) # Convertit la qualité en entier.
-                if mapq not in quality_counts:
-                    quality_counts[mapq] = 0
-                quality_counts[mapq] += 1
-
+    for read in data:
+        mapq = int(read['MAPQ'])
+        if mapq not in quality_counts:
+            quality_counts[mapq] = 0
+        quality_counts[mapq] += 1
     return quality_counts
 
 
-def count_partially_matched(read_pairs):
+def count_partially_matched_hk(data):
+    # Compte les lectures partiellement mappées.
     partial_reads = 0
-    for qname, reads in read_pairs.items():
-        for read in ['first_read', 'second_read']:
-            if reads[read] and 'CIGAR' in reads[read] and reads[read]['CIGAR']:
-                # Vérifie que CIGAR  est définie.
-                cigar = reads[read]['CIGAR']
-                if 'S' in cigar or 'H' in cigar:  # Recherche des indicateurs d'alignement partiel.
-                    partial_reads += 1
+    for read in data:
+        if 'S' in read["CIGAR"] or 'H' in read["CIGAR"]:
+            partial_reads += 1
     return partial_reads
 
 
@@ -152,7 +134,7 @@ def count_partially_matched(read_pairs):
 
 
 if __name__ == "__main__":
-   
+    #sam_file = input("Entrer le chemin du fichier Sam : ") 
     sam_file = sys.argv[1]
     if not os.path.exists(sam_file):
         # Vérifie si le fichier existe. Si non, affiche une erreur et termine le programme.
@@ -167,10 +149,9 @@ if __name__ == "__main__":
 
     mapped_reads, unmapped_reads = count_reads(data)
     read_pairs_stats = count_mapped_first_and_second(data)
-    read_pairs = read_pairs_stats["read_pairs"]
-    alignment_homogeneity = analyze_chromosome_positions(read_pairs)
-    quality_counts = count_reads_by_quality(read_pairs)
-    partial_reads = count_partially_matched(read_pairs)
+    alignment_homogeneity = analyze_chromosome_positions_hk(data)
+    quality_counts = count_reads_by_quality_hk(data)
+    partial_reads = count_partially_matched_hk(data)
 
     
     # Compilation des statistiques finales à afficher ou à exporter.
@@ -190,6 +171,8 @@ if __name__ == "__main__":
 for key, value in stats.items():
     print(f"{key}: {value}")
  # Affiche un résumé formaté des statistiques.
+
+
 
 
 ################################Tableau recapitulatif##########################
@@ -228,7 +211,7 @@ print(tabulate(chromosome_table, headers=["Chromosome", "Min Position", "Max Pos
 
 
 
-##############################Graphes#########################################
+###########################################Graphes#############################
 
 
 #Graphe circulaire pour visualiser la proportion des reads mappés et non mappés.
@@ -275,7 +258,9 @@ plt.title(f'Bar Plot Pour qualité de mappage dans {sam_file}')  # Ajoute un tit
 plt.savefig("mapping_quality.png", dpi=600, bbox_inches="tight")  # Sauvegarde le graphe.
 plt.clf()  # Nettoie la figure.
 
+#Histogramme pour la Distribution des Chromosomes
 
+#Graphique Linéaire pour l’Homogénéité d’Alignement
 
 
 
