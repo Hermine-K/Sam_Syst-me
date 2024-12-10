@@ -110,20 +110,23 @@ def analyze_chromosome_positions(data):
 def count_reads_by_quality(data):
     # Compte les reads par qualité de mappage.
     quality_counts = {}
-    for read in data:
-        mapq = int(read['MAPQ'])
-        if mapq not in quality_counts:
-            quality_counts[mapq] = 0
-        quality_counts[mapq] += 1
+    for read in data: # Extraction et conversion de la qualité de lecture ('MAPQ') en entier.
+        mapq = int(read['MAPQ']) 
+        if mapq not in quality_counts: # Vérifie si la qualité actuelle est déjà dans le dictionnaire.
+            quality_counts[mapq] = 0  # Si elle n'est pas présente, initialise le compteur à 0.
+        quality_counts[mapq] += 1  # Incrémente le compteur pour cette qualité.
     return quality_counts
 
 
 def count_partially_matched(data):
     # Compte les lectures partiellement mappées.
     partial_reads = 0
+    # Vérifie si le champ 'CIGAR' contient les indicateurs d'alignement partiel.
+        # 'S' indique un soft-clipping (partie du read non alignée au début ou à la fin).
+        # 'H' indique un hard-clipping (partie du read non alignée, mais non stockée).
     for read in data:
-        if 'S' in read["CIGAR"] or 'H' in read["CIGAR"]:
-            partial_reads += 1
+        if 'S' in read["CIGAR"] or 'H' in read["CIGAR"]: 
+            partial_reads += 1 # Incrémente le compteur si une condition est remplie.
     return partial_reads
 
 
