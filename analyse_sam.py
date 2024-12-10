@@ -1,6 +1,6 @@
 import sys  # Bibliothèque pour accéder aux arguments de la ligne de commande et gérer les interactions système.
 import os  # Bibliothèque pour manipuler les fichiers et répertoires du système.
-import matplotlib.pyplot as plt  # Bibliothèque pour créer des graphiques (ignore l'erreur de type si signalée par l'éditeur).
+import matplotlib.pyplot as plt  # type: ignore # Bibliothèque pour créer des graphiques (ignore l'erreur de type si signalée par l'éditeur).
 
 KEYS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL']
 # KEYS : Liste qui défini et répartis les colonnes du SAM pour les transformer en clés dans un dictionnaire.
@@ -72,7 +72,7 @@ def count_mapped_first_and_second(data):
 
 #Question 3 : Nombre de reads par chromosome
 
-def analyze_chromosome_positions_hk(data):
+def analyze_chromosome_positions(data):
     # Analyse la distribution des positions des reads sur chaque chromosome.
 
     chromosome_positions = {}  # Dictionnaire pour stocker les positions par chromosome.
@@ -107,7 +107,7 @@ def analyze_chromosome_positions_hk(data):
 
 #Question 4 : Nombre de reads pour chaque valeur de qualité ou par tranche de valeurs 
 
-def count_reads_by_quality_hk(data):
+def count_reads_by_quality(data):
     # Compte les reads par qualité de mappage.
     quality_counts = {}
     for read in data:
@@ -118,7 +118,7 @@ def count_reads_by_quality_hk(data):
     return quality_counts
 
 
-def count_partially_matched_hk(data):
+def count_partially_matched(data):
     # Compte les lectures partiellement mappées.
     partial_reads = 0
     for read in data:
@@ -149,9 +149,9 @@ if __name__ == "__main__":
 
     mapped_reads, unmapped_reads = count_reads(data)
     read_pairs_stats = count_mapped_first_and_second(data)
-    alignment_homogeneity = analyze_chromosome_positions_hk(data)
-    quality_counts = count_reads_by_quality_hk(data)
-    partial_reads = count_partially_matched_hk(data)
+    alignment_homogeneity = analyze_chromosome_positions(data)
+    quality_counts = count_reads_by_quality(data)
+    partial_reads = count_partially_matched(data)
 
     
     # Compilation des statistiques finales à afficher ou à exporter.
@@ -177,7 +177,7 @@ for key, value in stats.items():
 
 ################################Tableau recapitulatif##########################
 
-from tabulate import tabulate
+from tabulate import tabulate # type: ignore
 
 # Calcul des pourcentages
 mapped_percentage = (mapped_reads / nb_reads) * 100
