@@ -1,6 +1,7 @@
 import sys  # Bibliothèque pour accéder aux arguments de la ligne de commande et gérer les interactions système.
 import os  # Bibliothèque pour manipuler les fichiers et répertoires du système.
 import matplotlib.pyplot as plt  # Bibliothèque pour créer des graphiques (ignore l'erreur de type si signalée par l'éditeur).
+import re  # For working with regular expressions.
 
 KEYS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL']
 # KEYS : Liste qui défini et répartis les colonnes du SAM pour les transformer en clés dans un dictionnaire.
@@ -133,16 +134,23 @@ def count_reads_by_quality(read_pairs):
     return quality_counts
 
 
-def count_partially_matched(read_pairs):
-    partial_reads = 0
-    for qname, reads in read_pairs.items():
-        for read in ['first_read', 'second_read']:
-            if reads[read] and 'CIGAR' in reads[read] and reads[read]['CIGAR']:
-                # Vérifie que CIGAR  est définie.
-                cigar = reads[read]['CIGAR']
-                if 'S' in cigar or 'H' in cigar:  # Recherche des indicateurs d'alignement partiel.
-                    partial_reads += 1
-    return partial_reads
+def count_partially_mapped_reads(data):
+    partial_mapping_pattern = re.compile(r"[SHIND]")
+    # Counts partially mapped reads by checking the CIGAR column.
+    # A read is considered partially mapped if it does not contain only an integer followed by 'M'.
+    partial_reads = 0  # Initialize the counter for partially mapped reads
+
+    for read in data:  # Iterate through each read in the data
+        cigar = read["CIGAR"]  # Retrieve the CIGAR column
+        if cigar == "*":  # Ignore unaligned reads
+            continue
+        
+        # Check if the CIGAR contains anything other than an integer followed by 'M'
+        if partial_mapping_pattern.search(cigar):  
+            partial_reads += 1  # Increment if the read is partially mapped
+    return partial_reads  # Return the number of partially mapped reads
+
+
 
 
 
