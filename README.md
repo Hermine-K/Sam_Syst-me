@@ -1,78 +1,93 @@
-# **SAM File Analysis / Analyse de fichiers SAM**
+# **SAM File Analysis - System**
 
 ## **Introduction**
-The aim of this project is to provide an efficient and versatile tool for analysing SAM (Sequence Alignment/Map) files, which are widely used in bioinformatics to represent sequence read alignments. The scripts can be used to extract key data, summarise alignment statistics and generate graphical visualisations as well as tabular outputs, making the data easier to understand.
 
-Two scripts are included:
-1. `analyse_sam.py` – A version 1 main version with advanced features such as graphical visualisations and a PDF report.
-2. `analyse_sam2.py` –  - An enhanced version 2. 
+This project provides tools to analyze **SAM** (Sequence Alignment/Map) files using Python scripts and a Bash script. The goal is to extract alignment statistics, generate visualizations, and automate the validation of input files.
 
+SAM files are crucial in bioinformatics for representing sequence alignments obtained after sequencing. This project includes three scripts:
 
-## **Features**
+1. `check_sam.sh` - Validates input files before analysis.  
+2. `analyse_sam.py` - Complete and detailed SAM file analysis with statistics, visualizations, and PDF report generation.  
+3. `analyse_sam2.py` - A simplified and incomplete version, which served as an initial development step.
 
-### **Script 1: analyse_sam1.py**
-   - Reads and processes SAM files.
-   - Computes:
-     - Mapped and unmapped reads.
-     - First and second mapped reads.
-     - Chromosome alignment coverage.
-     - Reads grouped by mapping quality (MAPQ).
-     - Partially mapped reads.
-   - Generates:
-     - Console outputs with summary tables.
-     - Graphical visualizations (pie charts, bar plots, chromosome statistics).
-     - A comprehensive PDF report.
+## **Requirements**
 
+Before running the scripts, ensure the following tools and dependencies are installed:
 
-### **Script 2: analyse_sam2.py**
-- Similar to `analyse_sam.py` 
+### **System Requirements**
+- **Operating System:** Linux or macOS (compatible with Bash scripts).  
+- **Python Version:** Python 3.8 or later.  
 
+### **Python Libraries**
+The following Python libraries are required:
+- `matplotlib` (for generating plots)  
+- `tabulate` (for creating clean table outputs in the terminal)  
+- `fpdf` (for PDF report generation)  
+- `os` and `sys` (standard Python libraries for file handling)  
+- `re` (for regular expression matching)
+
+Install the required Python libraries using pip:
+```bash
+pip install matplotlib tabulate fpdf
+````
 
 ---
 
-## **Requirements / Prérequis**
+## **Scripts**
 
-Install the required libraries with:
+### **1. check_sam.sh**
 
+**Purpose:**  
+This Bash script validates the SAM file before processing with the Python scripts, ensuring the analysis starts on correct input.
+
+**Features:**
+- Checks if the specified file exists and is not empty.  
+- Identifies whether the input is a file or a directory.  
+- Verifies if the file extension is `.sam`.  
+
+**Usage:**  
 ```bash
-pip install matplotlib fpdf tabulate
- ````
-## **Dependencies**
+bash check_sam.sh <file_name.sam>
+bash check_sam.sh example.sam
 
-matplotlib – For generating plots.
-fpdf – For PDF report generation.
-tabulate – For table formatting in the console.
-Standard libraries: sys, os, re, collections.
+```
+## **2. analyse_sam1.py**
+Purpose:
+This script performs a detailed analysis of SAM files, extracting alignment statistics, generating visualizations, and creating a comprehensive PDF report.
 
-## **Usage**
+**Features:**
 
+- Data Extraction:
+- Converts SAM file lines into dictionaries for simplified analysis.
+- Alignment Statistics:
+- Counts total mapped, unmapped, and partially aligned reads.
+- Identifies first and second reads in read pairs.
+- Chromosome Coverage Analysis:
+- Calculates coverage, region length, and percentage of coverage for each chromosome.
+- Mapping Quality Evaluation:
+- Groups alignment scores (MAPQ) into intervals for better interpretation.
+- Visualization:
+- Generates pie charts, histograms, and combined graphs for easy result interpretation.
+- PDF Report Generation: Compiles all statistics and graphs into a professional PDF document.
+  
+**Usage:**
 ```python
-python analyse_sam.py <path_to_sam_file>
-
+python analyse_sam1.py <file_name.sam>
 ```
-```For example
-python analyse_sam.py mapping.sam
+##**analyse_sam2.py**
+**Purpose:**
+This script is a simplified version of analyse_sam1.py and was developed as a foundation before implementing advanced features.
+
+**Limitations:**
+
+- No graphical visualizations.
+- Lacks PDF report generation.
+- Limited to basic read mapping statistics.
+Usage:
+
+```Python
+python analyse_sam2.py <file_name.sam>
 ```
+## **Acknowledgments**
 
-## **Outputs**
-
-Console Output:
-
-- Summary statistics for reads (mapped, unmapped, partially mapped).
-    Chromosome-level coverage statistics.
-    Generated Files:
-
-- analysis_report.pdf: A detailed report with tables and embedded graphs.
-    Graph Images:
-      mapped_vs_unmapped.png
-      mapping_order.png
-      quality_mapping.png
-      chromosome_coverage.png
-
-## **Authors and Acknowledgments**
-
-- **Hermine Kiossou**: Main developer and author of `analyse_sam.py` and contributor to `analyse_sam2.py`.
-- **[Ton frère]**: Contributor for `analyse_sam2.py`.
-
-*Acknowledgment*: This project was supported and inspired by collaborative efforts and shared expertise.
-
+The development of `analyse_sam2.py` was made possible with the support and collaboration of [Harold Kiossou]. Their insights and assistance played a significant role in laying the foundation for this script.
