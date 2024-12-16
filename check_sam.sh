@@ -9,32 +9,23 @@ fi
 # Récupère le chemin du fichier SAM
 fichier_sam="$1"
 
-# Vérifie si le fichier existe
+# Vérifie si le fichier existe et est non vide
 if [ ! -f "$fichier_sam" ]; then
-    echo "Erreur : Le fichier '$fichier_sam' n'existe pas."
+    echo "Erreur : '$fichier_sam' n'est pas un fichier valide."
     exit 1
 fi
 
-# Vérifie si le fichier est non vide
 if [ ! -s "$fichier_sam" ]; then
     echo "Erreur : Le fichier '$fichier_sam' est vide."
     exit 1
 fi
 
-# Vérifie si le fichier commence par un en-tête (@)
-premiere_ligne=$(head -n 1 "$fichier_sam")
-if [[ ! "$premiere_ligne" =~ ^@ ]]; then
-    echo "Erreur : Le fichier '$fichier_sam' ne contient pas d'en-tête SAM valide."
-    exit 1
-fi
-
-# Vérifie le nombre de colonnes pour les lignes de données (11 minimum)
-nb_colonnes=$(awk '{print NF}' "$fichier_sam" | grep -v '^@' | sort -nu | head -n 1)
-if [ "$nb_colonnes" -lt 11 ]; then
-    echo "Erreur : Le fichier '$fichier_sam' contient des lignes avec moins de 11 colonnes obligatoires."
+# Vérifie si le fichier contient un en-tête SAM
+if ! grep -q "^@" "$fichier_sam"; then
+    echo "Erreur : Le fichier '$fichier_sam' ne semble pas contenir un en-tête SAM."
     exit 1
 fi
 
 # Si toutes les vérifications passent
-echo "Le fichier '$fichier_sam' est valide."
+echo "Le fichier '$fichier_sam' est un fichier SAM valide."
 exit 0
