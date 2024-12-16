@@ -1,75 +1,79 @@
-#  SAM System Analysis
+# **SAM File Analysis / Analyse de fichiers SAM**
 
-## Description
-Ce projet permet d'analyser les fichiers **SAM** afin de :
-1. Vérifier leur validité.
-2. Extraire diverses statistiques concernant les reads. 
+## **Introduction**
+### **English**
+The aim of this project is to provide an efficient and versatile tool for analysing SAM (Sequence Alignment/Map) files, which are widely used in bioinformatics to represent sequence read alignments. The scripts can be used to extract key data, summarise alignment statistics and generate graphical visualisations as well as tabular outputs, making the data easier to understand.
 
-Le projet contient :
-- Un script Python pour l'analyse des fichiers **SAM**.
-- Un script Bash pour vérifier la validité des fichiers **SAM**.
+Two scripts are included:
+1. `analyse_sam1.py` – A version 1 main version with advanced features such as graphical visualisations and a PDF report.
+2. `analyse_sam2.py` –  - An enhanced version 2. 
 
-## Fonctionnalités
-- **Vérification de fichiers SAM** :
-  - Validation de l'en-tête et des colonnes obligatoires.
-- **Extraction de statistiques** :
-  - Nombre total de reads (mappés et non mappés).
-  - Nombre de reads mappés en premier ou en second dans une paire.
-  - Distribution des positions des reads sur les chromosomes.
-  - Répartition des qualités de mappage des reads.
-  - Nombre de reads partiellement mappés.
 
-## Structure du Projet
-- `analyse_sam.py` : Script Python pour analyser les fichiers SAM.
-- `check_sam.sh` : Script Bash pour valider la structure des fichiers SAM.
-- `test_mapping.sam` : Exemple de fichier SAM utilisé pour tester les scripts.
+## **Features**
 
-## Utilisation
+### **Script 1: analyse_sam1.py**
+   - Reads and processes SAM files.
+   - Computes:
+     - Mapped and unmapped reads.
+     - First and second mapped reads.
+     - Chromosome alignment coverage.
+     - Reads grouped by mapping quality (MAPQ).
+     - Partially mapped reads.
+   - Generates:
+     - Console outputs with summary tables.
+     - Graphical visualizations (pie charts, bar plots, chromosome statistics).
+     - A comprehensive PDF report.
 
-### 1️⃣ Pré-requis
-- **Python 3.x** installé sur votre machine.
-- **Bash** (disponible sous Linux/MacOS ou via Git Bash sous Windows).
 
-### 🧪 Vérification du fichier SAM
-`Exécuter le script `check_sam.sh` pour vérifier la structure d'un fichier SAM :
+### **Script 2: analyse_sam2.py**
+- Similar to `analyse_sam1.py` 
+
+
+---
+
+## **Requirements / Prérequis**
+
+Install the required libraries with:
+
 ```bash
-bash check_sam.sh <chemin_du_fichier_sam>``
+pip install matplotlib fpdf tabulate
+ ````
+## **Dependencies**
 
-````
+matplotlib – For generating plots.
+fpdf – For PDF report generation.
+tabulate – For table formatting in the console.
+Standard libraries: sys, os, re, collections.
 
-📊 Analyse du fichier SAM
-````Pour analyser un fichier SAM et en extraire des statistiques, utilisez le script analyse_sam.py :
-python3 analyse_sam.py <chemin_du_fichier_sam>
+## **Usage**
 
-````
-Exemple d'utilisation
+```python
+python analyse_sam1.py <path_to_sam_file>
 
-1️⃣ Vérification d'un fichier SAM
-````Commande :
-bash check_sam.sh test_mapping.sam
-````
-Résultat attendu :
-Un message confirmant si le fichier est valide ou non.
+```
+```For example
+python analyse_sam1.py mapping.sam
+```
 
-2️⃣ Analyse d'un fichier SAM
-````Commande :
-python3 analyse_sam.py test_mapping.sam
-````
-Résultat attendu :
-Les statistiques suivantes :
+## **Outputs**
 
- total_reads
- mapped_reads
- unmapped_reads
- first_reads_mapped
- second_reads_mapped
- percentage_mapped
- partially_matched_reads
- quality_distribution
- chromosome_mapping
-    
+Console Output:
 
+- Summary statistics for reads (mapped, unmapped, partially mapped).
+    Chromosome-level coverage statistics.
+    Generated Files:
 
+- analysis_report.pdf: A detailed report with tables and embedded graphs.
+    Graph Images:
+      mapped_vs_unmapped.png
+      mapping_order.png
+      quality_mapping.png
+      chromosome_coverage.png
 
+## **Authors and Acknowledgments**
 
+- **Hermine Kiossou**: Main developer and author of `analyse_sam1.py` and contributor to `analyse_sam2.py`.
+- **[Ton frère]**: Contributor for `analyse_sam2.py`.
+
+*Acknowledgment*: This project was supported and inspired by collaborative efforts and shared expertise.
 
