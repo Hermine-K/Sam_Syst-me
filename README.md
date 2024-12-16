@@ -74,7 +74,7 @@ This script performs a detailed analysis of SAM files, extracting alignment stat
 ```python
 python analyse_sam1.py <file_name.sam>
 ```
-##**analyse_sam2.py**
+## **3. analyse_sam2.py**
 **Purpose:**
 This script is a simplified version of analyse_sam1.py and was developed as a foundation before implementing advanced features.
 
