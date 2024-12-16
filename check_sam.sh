@@ -1,31 +1,33 @@
 #!/bin/bash
 
-# Vérifie si un fichier a été fourni comme argument
+# Check if a file has been provided as an argument
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <fichier_sam>"
+    echo "Usage: $0 <sam_file>"
     exit 1
 fi
 
-# Récupère le chemin du fichier SAM
-fichier_sam="$1"
+# Retrieve the SAM file path
+sam_file="$1"
 
-# Vérifie si le fichier existe et est non vide
-if [ ! -f "$fichier_sam" ]; then
-    echo "Erreur : '$fichier_sam' n'est pas un fichier valide."
+# Check if the file exists and is not empty
+if [ ! -f "$sam_file" ]; then
+    echo "Error: '$sam_file' is not a valid file."
     exit 1
 fi
 
-if [ ! -s "$fichier_sam" ]; then
-    echo "Erreur : Le fichier '$fichier_sam' est vide."
+if [ ! -s "$sam_file" ]; then
+    echo "Error: The file '$sam_file' is empty."
     exit 1
 fi
 
-# Vérifie si le fichier contient un en-tête SAM
-if ! grep -q "^@" "$fichier_sam"; then
-    echo "Erreur : Le fichier '$fichier_sam' ne semble pas contenir un en-tête SAM."
+# Check if the file contains a SAM header
+if ! grep -q "^@" "$sam_file"; then
+    echo "Error: The file '$sam_file' does not appear to contain a SAM header."
     exit 1
 fi
 
-# Si toutes les vérifications passent
+# If all checks pass
+echo "The file '$sam_file' is valid and ready for analysis."
+nt
 echo "Le fichier '$fichier_sam' est un fichier SAM valide."
 exit 0
