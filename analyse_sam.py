@@ -1,276 +1,357 @@
-import sys  # Bibliothèque pour accéder aux arguments de la ligne de commande et gérer les interactions système.
-import os  # Bibliothèque pour manipuler les fichiers et répertoires du système.
-import matplotlib.pyplot as plt  # type: ignore # Bibliothèque pour créer des graphiques (ignore l'erreur de type si signalée par l'éditeur).
+import sys  # Library to access command-line arguments.
+import os  # Library to manage files and directories.
+import matplotlib.pyplot as plt  # Library to create plots and graphs.
+from collections import defaultdict  # Simplifies the handling of dictionaries.
+from tabulate import tabulate  # For displaying summary tables.
+import re  # For working with regular expressions.
+from fpdf import FPDF # For generating the final PDF document.
 
+# KEYS: List defining SAM file columns to convert them into dictionary keys.
 KEYS = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'RNEXT', 'PNEXT', 'TLEN', 'SEQ', 'QUAL']
-# KEYS : Liste qui défini et répartis les colonnes du SAM pour les transformer en clés dans un dictionnaire.
+
+# ==========================================================================
+# Function to read and extract data from a SAM file
+# ==========================================================================
+def create_dict(keys, values):
+    # Creates a dictionary by associating each key with a corresponding value.
+    return {keys[i]: values[i] for i in range(len(keys))}
 
 def read_sam_file(path):
-    # Fonction def pour lire le fichier SAM et extraire ses informations dans une liste de dictionnaires.
-    # Chaque ligne de données est convertie en un dictionnaire basé sur les colonnes définies dans KEYS.
-    data = list() ## Liste pour stocker les séquences lues.
-    with open(path, "r") as file: # Ouvre le fichier SAM en mode lecture.
-        for line in file: # Parcourt chaque ligne du fichier.
-            if line.startswith("@"): # Ignore l'en-tête.
+    # Reads the SAM file and extracts its data line by line.
+    data = []  # List to store all parsed sequences.
+    with open(path, "r") as file:  # Open the file in read mode.
+        for line in file:  # Loop through each line in the file.
+            if line.startswith("@"):  # Ignore header lines starting with "@".
                 continue
-            infos = line.split("\t") #Divise la ligne en colonnes.
-            if len(infos) < len(KEYS):  # Vérifier si toutes les colonnes sont présentes
+            infos = line.split("\t")  # Split the line into columns using tabs.
+            if len(infos) < len(KEYS):  # Verify if all columns are present.
                 continue
-            sequence = {KEYS[i]: infos[i] for i in range(len(KEYS))}
-            # Crée un dictionnaire en associant chaque clé de KEYS à une valeur de la ligne.
-            data.append(sequence) # Ajoute le dictionnaire à la liste.
-    return data # Renvoie la liste contenant toutes les séquences lues.
+            data.append(create_dict(KEYS, infos))  # Convert to dictionary and append to data list.
+    return data  # Return the list of dictionaries.
 
+# ==========================================================================
+# Question 1: Count mapped and unmapped reads
+# ==========================================================================
+def count_reads(data):
+    # Counts the number of mapped and unmapped reads based on the FLAG column.
+    mapped_reads = sum(1 for seq in data if not (int(seq['FLAG']) & 4))  # Reads are mapped if FLAG bit 4 is not set.
+    unmapped_reads = len(data) - mapped_reads  # Unmapped reads are the remaining ones.
+    return mapped_reads, unmapped_reads  # Return counts of mapped and unmapped reads.
 
-#Question 1 : Nombre de reads mappés
-
-def count_reads(data): # Compte le nombre de reads non mappées.
-    mapped_reads = 0 #Initialise le compteur de read mappées.
-    unmapped_reads = 0  # Initialise le compteur de read non mappées.
-    for sequence in data:  # Parcourt chaque séquence de data.
-        if int(sequence['FLAG']) & 4:  # Vérifie si le bit 4 du FLAG est activé (non mappé).
-            unmapped_reads += 1 # Incrémente le compteur si non mappé.
-        else:
-            mapped_reads += 1   # Incrémente le compteur si mappé. 
-    return mapped_reads, unmapped_reads  #Renvoie le nombre total de reads mappées et non mappées.
-
-
-
-
-#Question 2 : Nombre de reads pour chaque flag
-
+# ==========================================================================
+# Question 2: Count reads for each mapping flag
+# ==========================================================================
 def count_mapped_first_and_second(data):
-    # Analyse les reads mappées pour déterminer le pourcentage de premiers et seconds reads mappés.
-    read_pairs = dict()  # Dictionnaire pour stocker les paires de reads.
-    total_reads = 0   # Total des reads mappées.
-    first_reads_mapped = 0 # Nombre de premiers reads mappés.
-    second_reads_mapped = 0 # Nombre de second reads mappés.
-
-    for sequence in data:
-        flag = int(sequence['FLAG']) # Convertit le FLAG en entier.
-        
-        if flag & 4 > 0: # Ignore les reads non mappées / vérification.
+    # Counts the number of first and second mapped reads using FLAG bits.
+    stats = {"first_reads_mapped": 0, "second_reads_mapped": 0}  # Initialize statistics.
+    for seq in data:
+        flag = int(seq['FLAG'])  # Extract FLAG as an integer.
+        if flag & 4:  # Skip unmapped reads (FLAG bit 4 set).
             continue
+        if flag & 64:  # Check if FLAG bit 64 is set for first reads.
+            stats["first_reads_mapped"] += 1
+        if flag & 128:  # Check if FLAG bit 128 is set for second reads.
+            stats["second_reads_mapped"] += 1
+    return stats  # Return the counts of first and second mapped reads.
 
-        total_reads += 1   # Incrémente le total des reads mappées. 
+# ==========================================================================
+# Question 3: Chromosome coverage, percentage coverage, and mean read count
+# ==========================================================================
+def analyze_chromosome_coverage(data):
+    # Analyzes read positions by chromosome to determine coverage and mean read count.
+    chromosome_positions = defaultdict(list)  # Dictionary to store read positions for each chromosome.
 
-        # Vérifie si la read est la première ou la seconde dans une paire.
-        is_first_in_pair = flag & 64 > 0
-        is_second_in_pair = flag & 128 > 0
-
-        if is_first_in_pair:  # Stocke les informations du premier read.
-            first_reads_mapped += 1
-        elif is_second_in_pair: # Stocke les informations du second read.
-            second_reads_mapped +=1
-
-    return {
-        "first_reads_mapped": first_reads_mapped,
-        "second_reads_mapped": second_reads_mapped,
-    } 
-
-
-
-#Question 3 : Nombre de reads par chromosome
-
-def analyze_chromosome_positions(data):
-    # Analyse la distribution des positions des reads sur chaque chromosome.
-
-    chromosome_positions = {}  # Dictionnaire pour stocker les positions par chromosome.
-    for read in data:
-        chrom =read['RNAME']  # Chromosome associé à la read.
-        pos = int(read['POS'])  # Position sur le chromosome.
-
-        if chrom == "*": # Filtrer les reads non mappés (RNAME == '*')
+    for seq in data:
+        chrom = seq['RNAME']  # Get the chromosome name from RNAME.
+        if chrom == "*":  # Skip unmapped reads with RNAME == "*".
             continue
+        chromosome_positions[chrom].append(int(seq['POS']))  # Append position to the corresponding chromosome.
 
-        if chrom not in chromosome_positions:  # Ajoute un chromosome si absent.
-            chromosome_positions[chrom] = []
-        chromosome_positions[chrom].append(pos)  # Ajoute la position à la liste du chromosome.
+    # Calculate statistics for each chromosome.
+    chromosome_stats = {}
+    for chrom, positions in chromosome_positions.items():
+        min_pos = min(positions)  # Minimum position covered on the chromosome.
+        max_pos = max(positions)  # Maximum position covered on the chromosome.
+        coverage_length = max_pos - min_pos + 1  # Total covered region length.
+        read_count = len(positions)  # Total number of reads for this chromosome.
+        coverage = read_count / coverage_length  # Average coverage of reads.
+        coverage_percentage = (coverage_length / max_pos) * 100  # Coverage percentage.
 
-    alignment_homogeneity = {}  # Dictionnaire pour résumer l'homogénéité de l'alignement.
-
-    for chrom, positions in chromosome_positions.items():  # Parcourt chaque chromosome.
-        min_pos = min(positions)  # Position minimale.
-        max_pos = max(positions)  # Position maximale.
-        distrib_read = max_pos - min_pos  # Étendue de la distribution.
-
-        alignment_homogeneity[chrom] = {
-            "min_position": min_pos,
-            "max_position": max_pos,
-            "distrib_read": distrib_read,
-            "read_count": len(positions)  # Nombre total de reads.
+        # Store statistics in a dictionary for the current chromosome.
+        chromosome_stats[chrom] = {
+            "min_position": min_pos,  # Minimum position.
+            "max_position": max_pos,  # Maximum position.
+            "coverage_length": coverage_length,  # Total region length covered.
+            "read_count": read_count,  # Total number of reads.
+            "coverage": round(coverage, 2),  # Average read coverage.
+            "coverage_percentage": round(coverage_percentage, 2)  # Coverage percentage.
         }
+    return chromosome_stats  # Return the statistics.
 
-    return alignment_homogeneity  # Renvoie les informations sur l'homogénéité de l'alignement.
-
-
-
-#Question 4 : Nombre de reads pour chaque valeur de qualité ou par tranche de valeurs 
-
+# ==========================================================================
+# Question 4: Count reads by MAPQ quality score and partially mapped reads
+# ==========================================================================
 def count_reads_by_quality(data):
-    # Compte les reads par qualité de mappage.
-    quality_counts = {}
-    for read in data: # Extraction et conversion de la qualité de lecture ('MAPQ') en entier.
-        mapq = int(read['MAPQ']) 
-        if mapq not in quality_counts: # Vérifie si la qualité actuelle est déjà dans le dictionnaire.
-            quality_counts[mapq] = 0  # Si elle n'est pas présente, initialise le compteur à 0.
-        quality_counts[mapq] += 1  # Incrémente le compteur pour cette qualité.
-    return quality_counts
+    # Counts the number of reads for each MAPQ quality score.
+    quality_counts = defaultdict(int)  # Initialize a dictionary to count qualities.
+    for seq in data:
+        quality_counts[int(seq['MAPQ'])] += 1  # Increment count for each MAPQ score.
+    return quality_counts  # Return the quality counts.
+
+def group_quality_by_intervals(quality_counts, interval_size=10):
+    # Groups quality scores into intervals for better visualization.
+    grouped_counts = defaultdict(int)
+    for quality, count in quality_counts.items():
+        interval = (quality // interval_size) * interval_size  # Group by interval.
+        grouped_counts[interval] += count  # Increment the interval count.
+    return dict(sorted(grouped_counts.items()))  # Return sorted grouped counts.
+
+def count_partially_mapped_reads(data):
+    partial_mapping_pattern = re.compile(r"[SHIND]")
+    # Counts partially mapped reads by checking the CIGAR column.
+    # A read is considered partially mapped if it does not contain only an integer followed by 'M'.
+    partial_reads = 0  # Initialize the counter for partially mapped reads
+
+    for read in data:  # Iterate through each read in the data
+        cigar = read["CIGAR"]  # Retrieve the CIGAR column
+        if cigar == "*":  # Ignore unaligned reads
+            continue
+        
+        # Check if the CIGAR contains anything other than an integer followed by 'M'
+        if partial_mapping_pattern.search(cigar):  
+            partial_reads += 1  # Increment if the read is partially mapped
+    return partial_reads  # Return the number of partially mapped reads
 
 
-def count_partially_matched(data):
-    # Compte les lectures partiellement mappées.
-    partial_reads = 0
-    # Vérifie si le champ 'CIGAR' contient les indicateurs d'alignement partiel.
-        # 'S' indique un soft-clipping (partie du read non alignée au début ou à la fin).
-        # 'H' indique un hard-clipping (partie du read non alignée, mais non stockée).
-    for read in data:
-        if 'S' in read["CIGAR"] or 'H' in read["CIGAR"]: 
-            partial_reads += 1 # Incrémente le compteur si une condition est remplie.
-    return partial_reads
+
+
+# ========================================================================
+# Graph: Proportion of mapped and unmapped reads
+# ========================================================================
+def plot_mapped_and_unmapped_proportion(infos, name):
+    labels = ["Mapped", "Unmapped"]
+    plt.figure(figsize=(8, 8))
+    plt.pie(infos_maps, labels=labels, autopct='%1.1f%%', colors=['skyblue', 'orange'])
+    plt.title(f"Proportion of Mapped vs Unmapped Reads for {sam_file}")  # Add a title.
+    plt.savefig(f"{name}_mapped_vs_unmapped.png")  
+    plt.clf()
+
+
+# ========================================================================
+# Graph: Proportion of first mapped, second mapped, and unmapped reads
+# ========================================================================
+def plot_mapping_order(order_maps, name):
+    labels = ["First Reads", "Second Reads", "Unmapped"]  # Labels for the pie chart.
+    # Create a pie chart for first, second, and unmapped reads.
+    plt.figure(figsize=(8, 8))
+    plt.pie(order_maps, labels=labels, autopct='%1.1f%%', colors=['green', 'blue', 'red'])
+    plt.title(f"Mapping Order for Reads in {sam_file}")  # Add a title.
+    plt.savefig(f"{name}_mapping_order.png")
+    plt.clf()  # Clear the figure.
+
+
+# ========================================================================
+# Graph: Distribution of MAPQ quality scores
+# ========================================================================
+def plot_quality_mapping(quality_counts, name):
+    # Displays the distribution of MAPQ quality scores using a bar chart.
+    grouped_counts = group_quality_by_intervals(quality_counts)  # Group MAPQ scores by intervals.
+    intervals = list(grouped_counts.keys())  # Intervals for the x-axis.
+    counts = list(grouped_counts.values())  # Counts for the y-axis.
+
+    # Calculate the average MAPQ score.
+    total_reads = sum(counts)  # Total number of reads.
+    mean_quality = sum(interval * count for interval, count in grouped_counts.items()) / total_reads
+
+    # Create a bar chart for MAPQ scores.
+    plt.figure(figsize=(10, 6))
+    plt.bar(intervals, counts, width=8, color='skyblue', edgecolor='black', label='Number of Reads')
+    plt.axhline(mean_quality, color='red', linestyle='--', label=f'Average MAPQ: {mean_quality:.2f}')  # Add average line.
+    plt.xlabel('MAPQ Quality Intervals')  # X-axis label.
+    plt.ylabel('Number of Reads')  # Y-axis label.
+    plt.title('Distribution of MAPQ Quality Scores')  # Title for the graph.
+    plt.legend()
+    plt.savefig(f'{name}_quality_count.png')
+    plt.clf()  # Clear the figure.
+
+# ========================================================================
+# Graph: Chromosome read coverage
+# ========================================================================
+def plot_chromosome_coverage(chromosome_stats, name):
+    # Displays a combined bar and line chart for chromosome coverage statistics.
+    chromosomes = list(chromosome_stats.keys())  # Chromosome names.
+    read_counts = [stats["read_count"] for stats in chromosome_stats.values()]  # Read counts for each chromosome.
+    coverage_percentages = [stats["coverage_percentage"] for stats in chromosome_stats.values()]  # Coverage percentages.
+
+    # Create a combined bar and line chart.
+    fig, ax1 = plt.subplots(figsize=(12, 8))
+
+    # Horizontal bars for read counts.
+    ax1.barh(chromosomes, read_counts, color='lightblue', edgecolor='black', label='Read Counts')
+    ax1.set_xlabel('Read Counts', color='blue')  # X-axis label for read counts.
+    ax1.tick_params(axis='x', labelcolor='blue')
+
+    # Line chart for coverage percentages.
+    ax2 = ax1.twiny()  # Create a twin x-axis.
+    ax2.plot(coverage_percentages, chromosomes, 'ro-', label='% Coverage')  # Red line for coverage percentages.
+    ax2.set_xlabel('% Coverage', color='red')  # X-axis label for coverage.
+    ax2.tick_params(axis='x', labelcolor='red')
+
+    # Title and legend.
+    plt.title('Chromosome Read Counts and Coverage Percentage')  # Add a title.
+    fig.tight_layout()  # Adjust layout to prevent overlap.
+    plt.legend()
+    plt.savefig(f"{name}_chromosome_coverage.png")  # Save the chart as PNG.
+    plt.clf()  # Clear the figure.
+
+
+
+# ========================================================================
+# Function: Generate a PDF report
+# ========================================================================
+
+def generate_pdf(report_data, output_file, images):
+    """
+    Generates a PDF report containing:
+    - Summary tables with analysis statistics.
+    - Plots included as images.
+    """
+    print(report_data)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Title for the PDF
+    pdf.cell(200, 10, txt="SAM File Analysis Report", ln=True, align='C')
+    pdf.ln(10)
+
+    # Add summary tables
+    for title, table_data in report_data.items():
+        pdf.set_font("Arial", 'B', size=12)
+        pdf.cell(200, 10, txt=title, ln=True, align='L')
+        pdf.ln(5)
+        pdf.set_font("Arial", size=10)
+        for row in table_data:
+            pdf.cell(0, 10, txt=" | ".join(str(x) for x in row), ln=True)
+        pdf.ln(5)
+    # Add plots
+    pdf.set_font("Arial", 'B', size=12)
+    pdf.cell(200, 10, txt="Generated Plots", ln=True, align='L')
+    pdf.ln(10)
+    for image in images:
+        pdf.image(image, x=10, w=190)
+        pdf.ln(5)
+
+    # Save the PDF
+    pdf.output(output_file)
 
 
 
 
 
-##############################################"Main"#############################################################
-
-
+# ==========================================================================
+#                                  Main program execution
+# ==========================================================================
 if __name__ == "__main__":
-    #sam_file = input("Entrer le chemin du fichier Sam : ") 
-    sam_file = sys.argv[1]
-    if not os.path.exists(sam_file):
-        # Vérifie si le fichier existe. Si non, affiche une erreur et termine le programme.
+    sam_file = sys.argv[1]  # Get the SAM file path from the command line.
+    if not os.path.exists(sam_file):  # Check if the file exists.
         print(f"Error: The file '{sam_file}' does not exist.")
-        exit(1)
+        sys.exit(1)
 
-    # Lecture du fichier SAM et stockage des données dans une liste de dictionnaires.
+    name = os.path.basename(sam_file).split('.')[0]
+
+    # Step 1: Read the SAM file and extract data.
     data = read_sam_file(sam_file)
 
-     # Calcul du nombre total de reads dans le fichier.
-    nb_reads = len(data)
+    # Step 2: Calculate basic statistics for the file.
+    mapped_reads, unmapped_reads = count_reads(data)  # Count mapped and unmapped reads.
+    read_pairs_stats = count_mapped_first_and_second(data)  # Count first and second mapped reads.
+    chromosome_stats = analyze_chromosome_coverage(data)  # Analyze chromosome coverage.
+    quality_counts = count_reads_by_quality(data)  # Count reads by MAPQ quality.
+    total_mapping = read_pairs_stats['first_reads_mapped'] + read_pairs_stats['second_reads_mapped']
+    partially_mapped_reads = count_partially_mapped_reads(data)
 
-    mapped_reads, unmapped_reads = count_reads(data)
-    read_pairs_stats = count_mapped_first_and_second(data)
-    alignment_homogeneity = analyze_chromosome_positions(data)
-    quality_counts = count_reads_by_quality(data)
-    partial_reads = count_partially_matched(data)
 
-    
-    # Compilation des statistiques finales à afficher ou à exporter.
-    stats = {
-        "total_reads": nb_reads,
-        "mapped_reads": mapped_reads,
-        "unmapped_reads": unmapped_reads,
-        "first_reads_mapped": read_pairs_stats["first_reads_mapped"],
-        "second_reads_mapped": read_pairs_stats["first_reads_mapped"],
-        "percentage_mapped": mapped_reads * 100 / nb_reads,
-        "partially_matched_reads": partial_reads,
-        "quality_distribution": quality_counts,
-        "chromosome_mapping": alignment_homogeneity
-    }
+    # Step 3: Print summary statistics
+    # Print summary statistics for mapped and unmapped reads with percentages.
+    print("\n===== Summary Statistics =====")
+    total_reads = len(data)  # Total number of reads in the file.
+    table = [
+        ["Total Reads", total_reads, "100.00%"],
+        ["Mapped Reads", mapped_reads, f"{(mapped_reads / total_reads) * 100:.2f}%"],  # Mapped reads with percentage.
+        ["Unmapped Reads", unmapped_reads, f"{(unmapped_reads / total_reads) * 100:.2f}%"],  # Unmapped reads with percentage.
+        ["First Reads Mapped", read_pairs_stats['first_reads_mapped'], 
+        f"{(read_pairs_stats['first_reads_mapped'] / total_reads) * 100:.2f}%"],  # Percentage of first mapped reads.
+        ["Second Reads Mapped", read_pairs_stats['second_reads_mapped'], 
+        f"{(read_pairs_stats['second_reads_mapped'] / total_reads) * 100:.2f}%"],  # Percentage of second mapped reads.
+        ["Partially Mapped Reads", partially_mapped_reads, f"{(partially_mapped_reads / total_reads) * 100:.2f}%"],  # Percentage of partially mapped reads.
+    ]
 
    
-for key, value in stats.items():
-    print(f"{key}: {value}")
- # Affiche un résumé formaté des statistiques.
+    # Display the summary table using tabulate for formatting.
+    print(tabulate(table, headers=["Statistic", "Value", "Percentage"], tablefmt="grid"))
 
 
+    # Step 4: Print chromosome statistics
+    # Print detailed coverage statistics for each chromosome.
+    print("\n===== Chromosome Coverage Statistics =====")
+    chrom_table = [
+        [chrom, stats["min_position"], stats["max_position"], stats["coverage_length"],
+        mapped_reads, stats["coverage"], stats["coverage_percentage"]]  # Chromosome-level statistics.
+        for chrom, stats in chromosome_stats.items()
+    ]
+    # Display the chromosome statistics using tabulate for formatting.
+    print(tabulate(chrom_table, headers=["Chromosome", "Min Position", "Max Position", "Region Length",
+                                        "Read Count", "Average Coverage", "% Coverage"], tablefmt="grid"))
 
+    
 
-################################Tableau recapitulatif##########################
-
-from tabulate import tabulate # type: ignore
-
-# Calcul des pourcentages
-mapped_percentage = (mapped_reads / nb_reads) * 100
-unmapped_percentage = (unmapped_reads / nb_reads) * 100
-first_reads_percentage = (read_pairs_stats["first_reads_mapped"] / nb_reads) * 100
-second_reads_percentage = (read_pairs_stats["second_reads_mapped"] / nb_reads) * 100
-
-# Création du tableau avec les pourcentages
-table = [
-    ["Total Reads", nb_reads, "-"],
-    ["Mapped Reads", mapped_reads, f"{mapped_percentage:.2f}%"],
-    ["Unmapped Reads", unmapped_reads, f"{unmapped_percentage:.2f}%"],
-    ["First Reads Mapped", read_pairs_stats["first_reads_mapped"], f"{first_reads_percentage:.2f}%"],
-    ["Second Reads Mapped", read_pairs_stats["second_reads_mapped"], f"{second_reads_percentage:.2f}%"],
-    ["Partially Matched Reads", partial_reads, f"{(partial_reads / nb_reads) * 100:.2f}%"],
-]
-
-# Affichage du tableau dans la console
-print("\n===== Tableau Récapitulatif =====\n")
-print(tabulate(table, headers=["Statistique", "Valeur Brute", "Pourcentage"], tablefmt="grid"))
-
-# Chromosome_mapping
-chromosome_table = [
-    [chrom, stats["min_position"], stats["max_position"], stats["distrib_read"], stats["read_count"]]
-    for chrom, stats in alignment_homogeneity.items()
-]
-
-# Affichage du tableau des chromosomes
-print("\n===== Chromosome Mapping =====\n")
-print(tabulate(chromosome_table, headers=["Chromosome", "Min Position", "Max Position", "Distribution", "Read Count"], tablefmt="grid"))
-
-
-
-###########################################Graphes#############################
-
-
-#Graphe circulaire pour visualiser la proportion des reads mappés et non mappés.
-
-infos_maps = [mapped_reads, unmapped_reads] # Données pour le graphe (mappés et non mappés).
-labels = ["Mapped", "Unmapped"] # Étiquettes des catégories.
-
-plt.figure(figsize=(8, 8)) # Crée une figure de taille 8x8.
-plt.pie(infos_maps, labels=labels, autopct='%1.1f%%', colors=['skyblue', 'orange']) 
-# Génère le graphe circulaire avec les pourcentages
-plt.title(f"Mapped repartition for {sam_file}") # Ajoute un titre.
-plt.savefig("mapped_vs_unmapped.png", dpi=600, bbox_inches="tight")  # Sauvegarde le graphe en PNG.
-plt.clf() # Nettoie la figure pour éviter les superpositions.
-
-
-#Graphe circulaire pour visualiser la proportion 1er mappé vs 2iem mappé et des non mappés
-
-ordre_mappes = [read_pairs_stats["first_reads_mapped"], read_pairs_stats["first_reads_mapped"],  unmapped_reads]
-# Données pour le graphe (1er mappé, 2ième mappé et non mappés)
-labels = ["First reads", "Second reads", "Unmapped"] # Étiquettes des catégories.
-
-plt.figure(figsize=(8, 8)) # Crée une figure de taille 8x8.
-plt.pie(ordre_mappes, labels=labels, autopct='%1.1f%%', colors=['green', 'blue', 'red']) # Génère le graphe circulaire.
-plt.title(f"Ordre de mapping pour {sam_file}") # Ajoute un titre.
-plt.savefig("mapping_order.png", dpi=600, bbox_inches="tight")  # Sauvegarde le graphe en PNG.
-plt.clf() # Nettoie la figure pour éviter les superpositions.
-
-
-
-#Graphe en barres pour représenter la distribution de qualité (MAPQ).
-
-x_quality = []  # Liste pour les valeurs de qualité (MAPQ).
-y_quality = []  # Liste pour le nombre de reads pour chaque qualité.
-
-for x, y in quality_counts.items():  # Parcourt les paires qualité/nombre.
-    x_quality.append(x)  # Ajoute la qualité à la liste X.
-    y_quality.append(y)  # Ajoute le nombre de reads à la liste Y.
-
-plt.bar(x_quality, y_quality, color='skyblue', edgecolor='black')  # Crée le graphe en barres.
-plt.xlabel('Qualité')  # Ajoute une étiquette pour l'axe X.
-plt.ylabel('Nombre de reads')  # Ajoute une étiquette pour l'axe Y.
-plt.yscale("log")  # Met l'échelle de l'axe Y en logarithmique pour mieux visualiser les grandes différences.
-plt.title(f'Bar Plot Pour qualité de mappage dans {sam_file}')  # Ajoute un titre.
-plt.savefig("mapping_quality.png", dpi=600, bbox_inches="tight")  # Sauvegarde le graphe.
-plt.clf()  # Nettoie la figure.
-
-#Histogramme pour la Distribution des Chromosomes
-
-#Graphique Linéaire pour l’Homogénéité d’Alignement
+    # Print grouped quality count
+    print("\n===== Quality Count Statistics =====")
+    grouped_quality_count =  group_quality_by_intervals(quality_counts)
+    quality_list = []
+    for key, val in grouped_quality_count.items():
+        quality_list.append([str(key), val])
+    
+    print(tabulate(quality_list, headers=["Interval", "Number", ], tablefmt="grid"))
 
 
 
 
 
-############################Retourner un fichier de synthèse a#########################################"
+    # Data for the pie chart: mapped and unmapped reads.
+    infos_maps = [mapped_reads, unmapped_reads]
+    plot_mapped_and_unmapped_proportion(infos_maps, name)
 
-### avec tableau , graphe et interprétation
+    order_maps = [read_pairs_stats["first_reads_mapped"], read_pairs_stats["second_reads_mapped"], unmapped_reads]
+    labels = ["First Reads", "Second Reads", "Unmapped"]  # Labels for the pie chart.
+
+    plot_mapping_order(order_maps, name)
+   
+    plot_chromosome_coverage(chromosome_stats, name)
+    plot_quality_mapping(quality_counts, name)
+
+
+    # List of generated images to include in the PDF
+    images = [
+        f"{name}_mapped_vs_unmapped.png",
+        f"{name}_mapping_order.png",
+        f"{name}_quality_count.png",
+        f"{name}_chromosome_coverage.png"
+    ]
+
+
+    # Step 6: Generate the PDF report
+    report_data = {
+        "Summary Statistics": table,
+        "Chromosome Coverage Statistics": chrom_table,
+    }
+
+    #Generate the final PDF
+    
+    generate_pdf(report_data, f"{name}_analysis_report.pdf", images)
+    print("\nPDF report generated successfully: 'analysis_report.pdf'")
+
+
 
 
