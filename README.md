@@ -1,7 +1,6 @@
 # **SAM File Analysis / Analyse de fichiers SAM**
 
 ## **Introduction**
-### **English**
 The aim of this project is to provide an efficient and versatile tool for analysing SAM (Sequence Alignment/Map) files, which are widely used in bioinformatics to represent sequence read alignments. The scripts can be used to extract key data, summarise alignment statistics and generate graphical visualisations as well as tabular outputs, making the data easier to understand.
 
 Two scripts are included:
