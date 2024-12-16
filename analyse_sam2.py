@@ -140,46 +140,42 @@ def count_partially_mapped_reads(data):
 
 
 ##############################################"Main"#############################################################
-
-  
+if __name__ == "__main__":
+    # Main execution block
     sam_file = sys.argv[1]
     if not os.path.exists(sam_file):
-        # Checks whether the file exists. If not, displays an error and terminates the program.
         print(f"Error: The file '{sam_file}' does not exist.")
         exit(1)
 
-    # Reads the SAM file and stores the data in a list of dictionaries.
+    # Reads the SAM file
     data = read_sam_file(sam_file)
 
-     # Calculates the total number of reads in the file.
+    # Compute statistics
     nb_reads = len(data)
-
     mapped_reads, unmapped_reads = count_reads(data)
     read_pairs_stats = count_mapped_first_and_second(data)
     read_pairs = read_pairs_stats["read_pairs"]
     alignment_homogeneity = analyze_chromosome_positions(read_pairs)
     quality_counts = count_reads_by_quality(read_pairs)
-    partial_reads = count_partially_mapped_reads(read_pairs)
+    partial_reads = count_partially_mapped_reads(data)
 
-    
-    # Compilation of final statistics for display or export.
+    # Compilation of final statistics
     stats = {
         "total_reads": nb_reads,
         "mapped_reads": mapped_reads,
         "unmapped_reads": unmapped_reads,
         "first_reads_mapped": read_pairs_stats["first_reads_mapped"],
-        "second_reads_mapped": read_pairs_stats["first_reads_mapped"],
+        "second_reads_mapped": read_pairs_stats["second_reads_mapped"],
         "percentage_mapped": mapped_reads * 100 / nb_reads,
-        "partially_matched_reads": partial_reads,
+        "partially_mapped_reads": partial_reads,
         "quality_distribution": quality_counts,
         "chromosome_mapping": alignment_homogeneity
     }
 
-   
-for key, value in stats.items():
-    print(f"{key}: {value}")
-# Displays a formatted summary of the statistics.
-
+    # Display the statistics
+    print("\n===== Statistical Summary =====\n")
+    for key, value in stats.items():
+        print(f"{key}: {value}")
 
 ################################ Statistical summary ##########################
 
@@ -238,8 +234,8 @@ ordre_mappes = [read_pairs_stats["first_reads_mapped"], read_pairs_stats["first_
 # Data for the graph (1st mapped, 2nd mapped and unmapped)
 labels = ["First reads", "Second reads", "Unmapped"]  # Category labels.
 
-plt.figure(figsize=(8, 8))µ
-plt.pie(ordre_mappes, labels=labels, autopct='%1.1f%%', colors=['green', 'blue', 'red']).
+plt.figure(figsize=(8, 8))
+plt.pie(ordre_mappes, labels=labels, autopct='%1.1f%%', colors=['green', 'blue', 'red'])
 plt.title(f"Ordre de mapping pour {sam_file}") 
 plt.savefig("mapping_order.png", dpi=600, bbox_inches="tight") 
 plt.clf()
