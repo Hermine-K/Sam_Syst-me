@@ -1,4 +1,4 @@
-# **SAM File Analysis.**
+# **SAM File Analysis**
 
 ## **Introduction**
 
